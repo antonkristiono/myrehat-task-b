@@ -1,0 +1,39 @@
+# Local development database only.
+#
+# The deploy stack in `docker-compose.yml` is untouched: this file publishes
+# Postgres on the loopback interface so `next dev` / `bun run --hot` on the host
+# can connect with:
+#
+#   postgresql://postgres:postgres@localhost:5432/myrehat
+#
+# Usage:
+#   docker compose -f docker-compose.local.yml up -d
+#   docker compose -f docker-compose.local.yml down
+#
+# Data lives in the named volume below and survives `down`.
+
+name: myrehat-task-b-local
+
+services:
+  db:
+    image: postgres:17-alpine
+    container_name: myrehat-task-b-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: myrehat
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d myrehat"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  pg_data:
+    name: myrehat_task_b_pgdata
+    external: true

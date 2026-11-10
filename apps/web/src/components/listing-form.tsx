@@ -34,6 +34,22 @@ function toFieldErrors(error: z.ZodError): FieldErrors {
 	return errors;
 }
 
+/**
+ * Validasi client bisa dilewati (mis. request langsung ke API). Kalau server
+ * menolak, tampilkan pesan issue pertama — bukan cuma "Input validation failed".
+ */
+function serverErrorMessage(error: {
+	data?: unknown;
+	message?: string;
+}): string {
+	const issues = (
+		error.data as { issues?: Array<{ message?: string }> } | undefined
+	)?.issues;
+	return (
+		issues?.[0]?.message ?? error.message ?? "Could not publish the listing"
+	);
+}
+
 export function ListingForm() {
 	const router = useRouter();
 	const queryClient = useQueryClient();
@@ -56,7 +72,7 @@ export function ListingForm() {
 				router.push("/listings");
 			},
 			onError: (error) => {
-				toast.error(error.message || "Could not publish the listing");
+				toast.error(serverErrorMessage(error));
 			},
 		}),
 	);

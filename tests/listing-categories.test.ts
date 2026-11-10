@@ -38,6 +38,24 @@ describe("listing categories", () => {
 		});
 
 		expect(result.success).toBe(false);
+		if (!result.success) {
+			const message = result.error.issues[0]?.message ?? "";
+			// Pesan harus jelas: menyebut aturannya dan keempat opsi resmi.
+			expect(message).toMatch(/^Category must be one of:/);
+			for (const category of ACCEPTED) {
+				expect(message).toContain(category);
+			}
+		}
+	});
+
+	it("rejects an empty category with the same clear message", () => {
+		const result = createListingSchema.safeParse({ ...BASE, category: "" });
+
+		expect(result.success).toBe(false);
+		if (!result.success) {
+			const message = result.error.issues[0]?.message ?? "";
+			expect(message).toMatch(/^Category must be one of:/);
+		}
 	});
 
 	it("rejects a missing category", () => {

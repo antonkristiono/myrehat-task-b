@@ -7,6 +7,8 @@ export type AuthConfig = {
 	BETTER_AUTH_URL: string;
 	BETTER_AUTH_SECRET: string;
 	CORS_ORIGIN: string;
+	/** Origin tambahan dipisah koma (preview/tunnel), mis. Cloudflare. */
+	TRUSTED_ORIGINS?: string;
 };
 
 function safeOrigin(url: string): string | undefined {
@@ -17,6 +19,13 @@ function safeOrigin(url: string): string | undefined {
 	}
 }
 
+function splitOrigins(value: string | undefined): string[] {
+	return (value ?? "")
+		.split(",")
+		.map((origin) => origin.trim())
+		.filter(Boolean);
+}
+
 export function createAuth(
 	env: AuthConfig,
 	database: Database,
@@ -25,10 +34,15 @@ export function createAuth(
 	// Browser memanggil lewat origin web (rewrite Next), jadi origin itu wajib
 	// dipercaya. Origin dari BETTER_AUTH_URL ikut dimasukkan supaya deployment
 	// tidak gagal 403 "Invalid origin" kalau CORS_ORIGIN belum diset persis sama.
+	const corsOrigins = splitOrigins(env.CORS_ORIGIN);
+	const extraOrigins = splitOrigins(env.TRUSTED_ORIGINS);
+
 	const trustedOrigins = [
-		env.CORS_ORIGIN,
+		...corsOrigins,
+		...corsOrigins.map(safeOrigin),
+		...extraOrigins,
+		...extraOrigins.map(safeOrigin),
 		safeOrigin(env.BETTER_AUTH_URL),
-		safeOrigin(env.CORS_ORIGIN),
 		...desktopOrigins,
 	].filter((origin): origin is string => Boolean(origin));
 
